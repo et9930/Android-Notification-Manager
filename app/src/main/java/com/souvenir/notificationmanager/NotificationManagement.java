@@ -205,7 +205,11 @@ public class NotificationManagement {
             return false;
         }
 
-        if (appNotificationData.mode == AppNotificationMode.USE_BLACK_LIST && appNotificationData.blackList != null) {
+        if (appNotificationData.mode == AppNotificationMode.USE_BLACK_LIST) {
+            if (appNotificationData.blackList == null) {
+                return false;
+            }
+
             String[] blackList = appNotificationData.blackList.split("\\.");
             for (String keyWord :
                     blackList) {
@@ -221,7 +225,11 @@ public class NotificationManagement {
             return false;
         }
 
-        if (appNotificationData.mode == AppNotificationMode.USE_WHITE_LIST && appNotificationData.whiteList != null) {
+        if (appNotificationData.mode == AppNotificationMode.USE_WHITE_LIST) {
+            if (appNotificationData.whiteList == null) {
+                return true;
+            }
+
             String[] whiteList = appNotificationData.whiteList.split("\\.");
             for (String keyWord :
                     whiteList) {
