@@ -22,8 +22,6 @@ public class NotificationListener extends NotificationListenerService {
     
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        Log.i(TAG,"Notification posted");
-
         String packageName = sbn.getPackageName();
         Notification notification = sbn.getNotification();
         Bundle extras = notification.extras;
@@ -48,7 +46,6 @@ public class NotificationListener extends NotificationListenerService {
         if (sbn.isClearable()) {
             boolean block = NotificationManagement.GetInstance(getApplicationContext()).shouldBlocked(packageName, title, content);
             if (block) {
-                Log.i(TAG, "onNotificationPosted: cancel notification");
                 super.cancelNotification(sbn.getKey());
             }
 

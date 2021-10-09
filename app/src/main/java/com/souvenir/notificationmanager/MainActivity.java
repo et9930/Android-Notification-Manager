@@ -44,7 +44,6 @@ public class MainActivity extends AppCompatActivity {
     List<String> packageNames;
     private Handler myHandler = new Handler() {
         public void handleMessage(Message msg) {
-            Log.i(TAG, "handleMessage: " + msg);
             switch (msg.what) {
                 case 1:
                     ShowList();
@@ -195,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
     private void ShowList() {
         try {
             Set<String> packageNamesSet = new HashSet<>();
-            Log.i(TAG, "onCreate: " + getPackageManager().getInstalledApplications(0).size() + " " + getPackageManager().getInstalledPackages(0).size() + " search:" + searchWord);
             for (ApplicationInfo info : getPackageManager().getInstalledApplications(0)) {
                 if (searchWord.isEmpty() || info.packageName.contains(searchWord) || info.loadLabel(getPackageManager()).toString().contains(searchWord)) {
                     packageNamesSet.add(info.packageName);
@@ -269,7 +267,6 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     String packageName = packageNames.get(i);
-                    Log.i(TAG, "onItemClick: " + packageName);
                     Intent intent = new Intent();
                     Bundle bundle = new Bundle();
                     bundle.putSerializable("packageName", packageName);

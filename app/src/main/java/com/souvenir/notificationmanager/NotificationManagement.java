@@ -42,7 +42,6 @@ public class NotificationManagement {
 
     public synchronized void LoadAllDataFromDb(Handler handler) {
         if (loaded) {
-            Log.i(TAG, "LoadAllDataFromDb: prev loaded");
             Message msg = new Message();
             msg.what = 1;
             handler.sendMessage(msg);
@@ -52,7 +51,6 @@ public class NotificationManagement {
         new Thread() {
             @Override
             public void run() {
-                Log.i(TAG, "run: start LoadAllDataFromDb");
                 AppNotificationData[] appNotificationDatas = appNotificationDataDao.getAllAppNotificationData();
                 SingleNotification[] singleNotifications = singleNotificationDao.getAllNotifications();
 
@@ -85,7 +83,6 @@ public class NotificationManagement {
         appData.singleNotifications = singleNotificationsMap.get(packageName);
 
         if (appData.appNotificationData == null) {
-            Log.i(TAG, "GetAppData: " + packageName + " insert to db");
             appData.appNotificationData = new AppNotificationData();
             appData.appNotificationData.packageName = packageName;
             appData.appNotificationData.mode = AppNotificationMode.NONE;
@@ -110,7 +107,6 @@ public class NotificationManagement {
     }
 
     public void SetAppMode(String packageName, int mode) {
-        Log.i(TAG, "SetAppMode: " + packageName + " " + mode);
 
         AppNotificationData appNotificationData = appNotificationDataMap.get(packageName);
         if (appNotificationData.mode != mode) {
@@ -126,7 +122,6 @@ public class NotificationManagement {
     }
 
     public void SetBlackList(String packageName, String blackList) {
-        Log.i(TAG, "SetBlackList: " + packageName + " " + blackList);
         AppNotificationData appNotificationData = appNotificationDataMap.get(packageName);
         if (appNotificationData.blackList == null || !appNotificationData.blackList.equals(blackList)) {
             appNotificationData.blackList = blackList;
@@ -141,7 +136,6 @@ public class NotificationManagement {
     }
 
     public void SetWhiteList(String packageName, String whiteList) {
-        Log.i(TAG, "SetWhiteList: " + packageName + " " + whiteList);
         AppNotificationData appNotificationData = appNotificationDataMap.get(packageName);
         if (appNotificationData.whiteList == null || !appNotificationData.whiteList.equals(whiteList)) {
             appNotificationData.whiteList = whiteList;
@@ -156,8 +150,6 @@ public class NotificationManagement {
     }
 
     public void SaveNotification(String packageName, long time, String title, String content, boolean isBlocked) {
-        Log.i(TAG, "SaveNotification: packageName:" + packageName + ", time:" + time + ", title:" + title + ", content:" + content + ", isBlocked:" + isBlocked);
-
         SingleNotification singleNotification = new SingleNotification();
         singleNotification.packageName = packageName;
         singleNotification.sendTime = time;
@@ -182,7 +174,6 @@ public class NotificationManagement {
     public boolean shouldBlocked(String packageName, String title, String content) {
         AppNotificationData appNotificationData = appNotificationDataMap.get(packageName);
         if (appNotificationData == null) {
-            Log.i(TAG, "GetAppData: " + packageName + " insert to db");
             appNotificationData = new AppNotificationData();
             appNotificationData.packageName = packageName;
             appNotificationData.mode = AppNotificationMode.NONE;
@@ -213,6 +204,10 @@ public class NotificationManagement {
             String[] blackList = appNotificationData.blackList.split("\\.");
             for (String keyWord :
                     blackList) {
+                if (keyWord.trim().isEmpty()) {
+                    continue;
+                }
+
                 if (title.contains(keyWord)) {
                     return true;
                 }
@@ -233,6 +228,10 @@ public class NotificationManagement {
             String[] whiteList = appNotificationData.whiteList.split("\\.");
             for (String keyWord :
                     whiteList) {
+                if (keyWord.trim().isEmpty()) {
+                    continue;
+                }
+
                 if (title.contains(keyWord)) {
                     return false;
                 }
