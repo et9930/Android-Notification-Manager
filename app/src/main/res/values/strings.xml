@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">NotificationManager</string>
     <string name="service_name">NotificationListener</string>
+
+    <string name="sample_device_admin_description">此应用用于维持后台存活</string>
+    <string name="sample_device_admin">NotificationManager</string>
+
 </resources>
