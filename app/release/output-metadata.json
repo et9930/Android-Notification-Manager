@@ -12,8 +12,8 @@
       "filters": [],
       "attributes": [],
       "versionCode": 3,
-      "versionName": "1.3",
-      "outputFile": "com.souvenir.notificationmanager_release_v1.3.apk"
+      "versionName": "1.3.1",
+      "outputFile": "com.souvenir.notificationmanager_release_v1.3.1.apk"
     }
   ],
   "elementType": "File"
