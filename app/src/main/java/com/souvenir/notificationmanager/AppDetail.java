@@ -189,7 +189,7 @@ public class AppDetail extends AppCompatActivity {
                 NotificationManagement nm = NotificationManagement.GetInstance(getApplicationContext());
                 if (toBlacklist) nm.SetBlackList(packageName, newText);
                 else nm.SetWhiteList(packageName, newText);
-                Toast.makeText(this, "\u5df2\u6dfb\u52a0 " + sb.toString().split("\\.").length + " \u4e2a\u5173\u952e\u8bcd",
+                Toast.makeText(this, "\u5df2\u6dfb\u52a0\u5173\u952e\u8bcd: " + sb.toString(),
                         Toast.LENGTH_SHORT).show();
         }
 
