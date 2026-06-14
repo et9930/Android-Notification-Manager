@@ -23,4 +23,7 @@ public interface SingleNotificationDao {
 
     @Query("SELECT * FROM single_notification_table WHERE package_name == :packageName")
     SingleNotification[] getPackageNotifications(String packageName);
+
+    @Query("SELECT * FROM single_notification_table WHERE notification_key == :key")
+    SingleNotification[] getNotificationByKey(String key);
 }

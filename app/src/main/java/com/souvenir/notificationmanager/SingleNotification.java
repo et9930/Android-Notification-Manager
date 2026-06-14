@@ -22,4 +22,7 @@ public class SingleNotification {
     @ColumnInfo(name = "is_blocked")
     public boolean isBlocked;
 
+    @ColumnInfo(name = "notification_key")
+    public String notificationKey;
+
 }

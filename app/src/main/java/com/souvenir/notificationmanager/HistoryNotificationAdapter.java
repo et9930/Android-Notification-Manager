@@ -5,13 +5,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 public class HistoryNotificationAdapter extends BaseAdapter {
+
     static class ViewHolder {
         TextView timeText;
         TextView titleText;
@@ -21,54 +22,52 @@ public class HistoryNotificationAdapter extends BaseAdapter {
 
     Context context;
     List<SingleNotification> notifications;
-    LayoutInflater inflter;
+    LayoutInflater inflater;
 
-    public HistoryNotificationAdapter(Context applicationContext, List<SingleNotification> notifications) {
-        this.context = applicationContext;
+    public HistoryNotificationAdapter(Context context, List<SingleNotification> notifications) {
+        this.context = context;
         this.notifications = notifications;
-        inflter = (LayoutInflater.from(applicationContext));
+        this.inflater = LayoutInflater.from(context);
     }
 
     @Override
     public int getCount() {
-        return notifications.size();
+        return notifications != null ? notifications.size() : 0;
     }
 
     @Override
-    public Object getItem(int i) {
-        return notifications.get(i);
+    public Object getItem(int position) {
+        return notifications.get(position);
     }
 
     @Override
-    public long getItemId(int i) {
-        return notifications.get(i).hashCode();
+    public long getItemId(int position) {
+        return notifications.get(position).hashCode();
     }
 
     @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
+    public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder;
-        if (view == null) {
-            view = inflter.inflate(R.layout.activity_history_notification, null);
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.activity_history_notification, parent, false);
             holder = new ViewHolder();
-
-            holder.timeText = (TextView) view.findViewById(R.id.TimeText);
-            holder.titleText = (TextView) view.findViewById(R.id.TitleText);
-            holder.contentText = (TextView) view.findViewById(R.id.ContentText) ;
-            holder.stateText = (TextView) view.findViewById(R.id.StateText) ;
-
-            view.setTag(holder);
+            holder.timeText = convertView.findViewById(R.id.TimeText);
+            holder.titleText = convertView.findViewById(R.id.TitleText);
+            holder.contentText = convertView.findViewById(R.id.ContentText);
+            holder.stateText = convertView.findViewById(R.id.StateText);
+            convertView.setTag(holder);
         } else {
-            holder = (ViewHolder) view.getTag();
+            holder = (ViewHolder) convertView.getTag();
         }
 
-        SingleNotification notification = (SingleNotification) this.getItem(i);
+        SingleNotification notification = (SingleNotification) getItem(position);
 
-        SimpleDateFormat format =  new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //设置格式
-        holder.timeText.setText(format.format(notification.sendTime));                                //获得带格式的字符串
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        holder.timeText.setText(format.format(notification.sendTime));
         holder.titleText.setText(notification.title);
         holder.contentText.setText(notification.content);
         holder.stateText.setText(notification.isBlocked ? "已拦截" : "未拦截");
 
-        return view;
+        return convertView;
     }
 }

@@ -3,8 +3,6 @@ package com.souvenir.notificationmanager;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.os.Message;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,98 +13,93 @@ import android.widget.TextView;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class AppListItemAdapter extends BaseAdapter {
+
     static class ViewHolder {
-        TextView packageName;
         ImageView packageIcon;
+        TextView packageName;
         TextView packageState;
     }
 
     Context context;
     List<String> packageInfos;
-    LayoutInflater inflter;
+    LayoutInflater inflater;
     PackageManager pm;
 
-    public AppListItemAdapter(Context applicationContext, List<String> packageInfos, PackageManager pm) {
-        this.context = applicationContext;
+    public AppListItemAdapter(Context context, List<String> packageInfos, PackageManager pm) {
+        this.context = context;
         this.packageInfos = packageInfos;
         this.pm = pm;
-        inflter = (LayoutInflater.from(applicationContext));
+        this.inflater = LayoutInflater.from(context);
     }
 
     @Override
     public int getCount() {
-        return packageInfos.size();
+        return packageInfos != null ? packageInfos.size() : 0;
     }
 
     @Override
-    public Object getItem(int i) {
-        return packageInfos.get(i);
+    public Object getItem(int position) {
+        return packageInfos.get(position);
     }
 
     @Override
-    public long getItemId(int i) {
-        return packageInfos.get(i).hashCode();
+    public long getItemId(int position) {
+        return packageInfos.get(position).hashCode();
     }
 
     @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
+    public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder;
-        if (view == null) {
-            view = inflter.inflate(R.layout.activity_app_list_view_item, null);
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.activity_app_list_view_item, parent, false);
             holder = new ViewHolder();
-
-            holder.packageIcon = (ImageView) view.findViewById(R.id.packageIcon);
-            holder.packageName = (TextView) view.findViewById(R.id.packageName);
-            holder.packageState = (TextView) view.findViewById(R.id.packageState) ;
-            view.setTag(holder);
+            holder.packageIcon = convertView.findViewById(R.id.packageIcon);
+            holder.packageName = convertView.findViewById(R.id.packageName);
+            holder.packageState = convertView.findViewById(R.id.packageState);
+            convertView.setTag(holder);
         } else {
-            holder = (ViewHolder) view.getTag();
+            holder = (ViewHolder) convertView.getTag();
         }
+
         try {
-            PackageInfo item = pm.getPackageInfo((String) this.getItem(i), 0);
+            PackageInfo item = pm.getPackageInfo((String) getItem(position), 0);
             holder.packageIcon.setImageDrawable(item.applicationInfo.loadIcon(pm));
             holder.packageName.setText(item.applicationInfo.loadLabel(pm));
 
             AppData appData = NotificationManagement.GetInstance(context).GetAppData(item.packageName);
 
-            if (item != null && item.packageName == item.packageName) {
-                String state = "";
-                if (appData.appNotificationData.mode == AppNotificationMode.NONE) {
-                    state = "不拦截";
-                } else if (appData.appNotificationData.mode == AppNotificationMode.USE_WHITE_LIST) {
-                    state = "白名单模式";
-                } else if (appData.appNotificationData.mode == AppNotificationMode.USE_BLACK_LIST) {
-                    state = "黑名单模式";
-                }
-
-                long lastTime = 0;
-                int blockNumber = 0;
-                for (SingleNotification notification:
-                     appData.singleNotifications) {
-                    if (notification.isBlocked) {
-                        blockNumber ++;
-                    }
-                    if (notification.sendTime > lastTime) {
-                        lastTime = notification.sendTime;
-                    }
-                }
-
-                String times = "无";
-
-                if (lastTime != 0) {
-                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    times = format.format(new Date(lastTime));
-                }
-
-                holder.packageState.setText("当前模式:" + state + "\n上次通知时间:" + times + "\n拦截次数:" + blockNumber);
+            String stateText;
+            int mode = appData.appNotificationData.mode;
+            if (mode == AppNotificationMode.USE_WHITE_LIST) {
+                stateText = "白名单模式";
+            } else if (mode == AppNotificationMode.USE_BLACK_LIST) {
+                stateText = "黑名单模式";
+            } else {
+                stateText = "不拦截";
             }
+
+            long lastTime = 0;
+            int blockNumber = 0;
+            for (SingleNotification sn : appData.singleNotifications) {
+                if (sn.isBlocked) blockNumber++;
+                if (sn.sendTime > lastTime) lastTime = sn.sendTime;
+            }
+
+            String times = lastTime != 0
+                    ? new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(lastTime))
+                    : "N/A";
+
+            holder.packageState.setText("当前模式:" + stateText
+                    + "\n上次通知时间:" + times
+                    + "\n拦截次数:" + blockNumber);
 
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
 
-        return view;
+        return convertView;
     }
 }

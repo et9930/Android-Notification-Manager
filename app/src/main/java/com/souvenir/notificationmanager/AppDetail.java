@@ -1,31 +1,26 @@
 package com.souvenir.notificationmanager;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.Log;
-import android.view.KeyEvent;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class AppDetail extends AppCompatActivity {
-    private final static String TAG = "AppDetail";
+    private static final String TAG = "AppDetail";
 
     private String packageName;
     private ImageView icon;
@@ -37,8 +32,6 @@ public class AppDetail extends AppCompatActivity {
     private ListView historyList;
     private List<SingleNotification> notificationList;
     private HistoryNotificationAdapter historyNotificationAdapter;
-
-    private PackageManager pm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,129 +45,95 @@ public class AppDetail extends AppCompatActivity {
         blackList = findViewById(R.id.blackListInput);
         whiteList = findViewById(R.id.whiteListInput);
         historyList = findViewById(R.id.historyNotifications);
-        notificationList = new ArrayList<>();
-        historyNotificationAdapter = new HistoryNotificationAdapter(getApplicationContext(), notificationList);
-        historyList.setAdapter(historyNotificationAdapter);
-        pm = getPackageManager();
 
-        Intent myIntend = getIntent();
-        Bundle myBundle = myIntend.getBundleExtra("packageName");
+        notificationList = new ArrayList<>();
+        historyNotificationAdapter = new HistoryNotificationAdapter(this, notificationList);
+        historyList.setAdapter(historyNotificationAdapter);
+
+        PackageManager pm = getPackageManager();
+
+        Intent myIntent = getIntent();
+        Bundle myBundle = myIntent.getBundleExtra("packageName");
         packageName = (String) myBundle.getSerializable("packageName");
+
         try {
             PackageInfo item = pm.getPackageInfo(packageName, 0);
             icon.setImageDrawable(item.applicationInfo.loadIcon(pm));
             name.setText(item.applicationInfo.loadLabel(pm));
 
-            AppData appData = NotificationManagement.GetInstance(getApplicationContext()).GetAppData(item.packageName);
+            NotificationManagement nm = NotificationManagement.GetInstance(getApplicationContext());
+            AppData appData = nm.GetAppData(item.packageName);
 
-            if(appData.appNotificationData.mode == AppNotificationMode.NONE) {
+            int mode = appData.appNotificationData.mode;
+            if (mode == AppNotificationMode.NONE) {
                 modeGroup.check(R.id.noneMode);
-            } else if (appData.appNotificationData.mode == AppNotificationMode.USE_BLACK_LIST) {
+            } else if (mode == AppNotificationMode.USE_BLACK_LIST) {
                 modeGroup.check(R.id.blackMode);
-            } else if (appData.appNotificationData.mode == AppNotificationMode.USE_WHITE_LIST) {
+            } else if (mode == AppNotificationMode.USE_WHITE_LIST) {
                 modeGroup.check(R.id.whiteMode);
             }
 
-            if (appData.appNotificationData.blackList != null) {
-                blackList.setText(appData.appNotificationData.blackList);
-            } else {
-                blackList.setText("");
-            }
-
-            if (appData.appNotificationData.whiteList != null) {
-                whiteList.setText(appData.appNotificationData.whiteList);
-            } else {
-                whiteList.setText("");
-            }
+            blackList.setText(appData.appNotificationData.blackList != null
+                    ? appData.appNotificationData.blackList : "");
+            whiteList.setText(appData.appNotificationData.whiteList != null
+                    ? appData.appNotificationData.whiteList : "");
 
             long lastTime = 0;
             int blockNumber = 0;
-            for (SingleNotification notification:
-                    appData.singleNotifications) {
-                if (notification.isBlocked) {
-                    blockNumber ++;
-                }
-                if (notification.sendTime > lastTime) {
-                    lastTime = notification.sendTime;
-                }
+            for (SingleNotification notification : appData.singleNotifications) {
+                if (notification.isBlocked) blockNumber++;
+                if (notification.sendTime > lastTime) lastTime = notification.sendTime;
             }
 
-            String times = "无";
-
-            if (lastTime != 0) {
-                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                times = format.format(new Date(lastTime));
-            }
+            String times = lastTime != 0
+                    ? new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(lastTime))
+                    : "N/A";
 
             state.setText("上次通知时间:" + times + "\n拦截次数:" + blockNumber);
 
-            this.notificationList.clear();
-            this.notificationList.addAll(appData.singleNotifications);
-
-            Collections.sort(this.notificationList, new Comparator<SingleNotification>() {
-                public int compare(SingleNotification o1, SingleNotification o2) {
-                    return o2.sendTime >= o1.sendTime ? 1 : -1;
-                }
-            });
-
+            notificationList.clear();
+            notificationList.addAll(appData.singleNotifications);
+            Collections.sort(notificationList, (o1, o2) -> Long.compare(o2.sendTime, o1.sendTime));
             historyNotificationAdapter.notifyDataSetChanged();
-            historyList.setAdapter(historyNotificationAdapter);
 
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
 
-        modeGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup radioGroup, int checkedId) {
-                switch (checkedId){
-                    case R.id.noneMode:
-                        NotificationManagement.GetInstance(getApplicationContext()).SetAppMode(packageName, AppNotificationMode.NONE);
-                        break;
-                    case R.id.blackMode:
-                        NotificationManagement.GetInstance(getApplicationContext()).SetAppMode(packageName, AppNotificationMode.USE_BLACK_LIST);
-                        break;
-                    case R.id.whiteMode:
-                        NotificationManagement.GetInstance(getApplicationContext()).SetAppMode(packageName, AppNotificationMode.USE_WHITE_LIST);
-                        break;
-                    default:
-                        break;
-                }
+        modeGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            int mode;
+            if (checkedId == R.id.noneMode) {
+                mode = AppNotificationMode.NONE;
+            } else if (checkedId == R.id.blackMode) {
+                mode = AppNotificationMode.USE_BLACK_LIST;
+            } else if (checkedId == R.id.whiteMode) {
+                mode = AppNotificationMode.USE_WHITE_LIST;
+            } else {
+                return;
+            }
+            NotificationManagement.GetInstance(getApplicationContext()).SetAppMode(packageName, mode);
+        });
+
+        blackList.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                NotificationManagement.GetInstance(getApplicationContext())
+                        .SetBlackList(packageName, blackList.getText().toString());
             }
         });
 
-        blackList.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View view, boolean hasFocus) {
-                if (!hasFocus) {
-                    NotificationManagement.GetInstance(getApplicationContext()).SetBlackList(packageName, blackList.getText().toString());
-                }
+        whiteList.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                NotificationManagement.GetInstance(getApplicationContext())
+                        .SetWhiteList(packageName, whiteList.getText().toString());
             }
         });
-
-        whiteList.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View view, boolean hasFocus) {
-                if (!hasFocus) {
-                    NotificationManagement.GetInstance(getApplicationContext()).SetWhiteList(packageName, whiteList.getText().toString());
-                }
-            }
-        });
-
-
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        historyNotificationAdapter.notifyDataSetChanged();
-        historyList.setAdapter(historyNotificationAdapter);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        NotificationManagement.GetInstance(getApplicationContext()).SetBlackList(packageName, blackList.getText().toString());
-        NotificationManagement.GetInstance(getApplicationContext()).SetWhiteList(packageName, whiteList.getText().toString());
+        NotificationManagement nm = NotificationManagement.GetInstance(getApplicationContext());
+        nm.SetBlackList(packageName, blackList.getText().toString());
+        nm.SetWhiteList(packageName, whiteList.getText().toString());
     }
 }

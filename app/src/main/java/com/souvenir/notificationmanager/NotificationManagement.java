@@ -1,15 +1,15 @@
 package com.souvenir.notificationmanager;
 
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class NotificationManagement {
     private static NotificationManagement instance;
@@ -20,24 +20,28 @@ public class NotificationManagement {
         }
         return instance;
     }
-    private static String TAG = "NotificationManagement";
-    private AppNotificationDatabase appNotificationDatabase;
-    private Map<String, AppNotificationData> appNotificationDataMap;
-    public AppNotificationDataDao appNotificationDataDao;
 
-    private SingleNotificationDatabase singleNotificationDatabase;
-    private Map<String, List<SingleNotification>> singleNotificationsMap;
-    public SingleNotificationDao singleNotificationDao;
-    private boolean loaded = false;
+    private static final String TAG = "NotificationManagement";
+
+    private final AppNotificationDatabase appNotificationDatabase;
+    private final Map<String, AppNotificationData> appNotificationDataMap;
+    public final AppNotificationDataDao appNotificationDataDao;
+
+    private final SingleNotificationDatabase singleNotificationDatabase;
+    private final Map<String, List<SingleNotification>> singleNotificationsMap;
+    public final SingleNotificationDao singleNotificationDao;
+
+    private volatile boolean loaded = false;
+    private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor();
 
     private NotificationManagement(Context context) {
         appNotificationDatabase = AppNotificationDatabase.getInstance(context);
         appNotificationDataDao = appNotificationDatabase.getAppNotificationDataDao();
-        appNotificationDataMap = new HashMap<>();
+        appNotificationDataMap = new ConcurrentHashMap<>();
 
         singleNotificationDatabase = SingleNotificationDatabase.getInstance(context);
         singleNotificationDao = singleNotificationDatabase.getSingleNotificationDao();
-        singleNotificationsMap = new HashMap<>();
+        singleNotificationsMap = new ConcurrentHashMap<>();
     }
 
     public synchronized void LoadAllDataFromDb(Handler handler) {
@@ -48,199 +52,142 @@ public class NotificationManagement {
             return;
         }
 
-        new Thread() {
-            @Override
-            public void run() {
-                AppNotificationData[] appNotificationDatas = appNotificationDataDao.getAllAppNotificationData();
-                SingleNotification[] singleNotifications = singleNotificationDao.getAllNotifications();
+        dbExecutor.execute(() -> {
+            AppNotificationData[] appNotificationDatas = appNotificationDataDao.getAllAppNotificationData();
+            SingleNotification[] singleNotifications = singleNotificationDao.getAllNotifications();
 
-                for (AppNotificationData appNotificationData:
-                        appNotificationDatas) {
-                    appNotificationDataMap.put(appNotificationData.packageName, appNotificationData);
-                }
-
-                for (SingleNotification singleNotification:
-                        singleNotifications) {
-
-                    if (!singleNotificationsMap.containsKey(singleNotification.packageName)) {
-                        singleNotificationsMap.put(singleNotification.packageName, new ArrayList<>());
-                    }
-                    singleNotificationsMap.get(singleNotification.packageName).add(singleNotification);
-                }
-                loaded = true;
-
-                Message msg = new Message();
-                msg.what = 1;
-                handler.sendMessage(msg);
+            for (AppNotificationData data : appNotificationDatas) {
+                appNotificationDataMap.put(data.packageName, data);
             }
-        }.start();
+
+            for (SingleNotification sn : singleNotifications) {
+                singleNotificationsMap
+                        .computeIfAbsent(sn.packageName, k -> new ArrayList<>())
+                        .add(sn);
+            }
+            loaded = true;
+
+            Message msg = new Message();
+            msg.what = 1;
+            handler.sendMessage(msg);
+        });
     }
 
     public AppData GetAppData(String packageName) {
         AppData appData = new AppData();
 
-        appData.appNotificationData = appNotificationDataMap.get(packageName);
-        appData.singleNotifications = singleNotificationsMap.get(packageName);
+        appData.appNotificationData = appNotificationDataMap.computeIfAbsent(packageName, k -> {
+            AppNotificationData data = new AppNotificationData();
+            data.packageName = packageName;
+            data.mode = AppNotificationMode.NONE;
 
-        if (appData.appNotificationData == null) {
-            appData.appNotificationData = new AppNotificationData();
-            appData.appNotificationData.packageName = packageName;
-            appData.appNotificationData.mode = AppNotificationMode.NONE;
-            appNotificationDataMap.put(packageName, appData.appNotificationData);
-
-            new Thread(){
-                @Override
-                public synchronized void run() {
-                    if (appNotificationDataDao.getAppNotificationDataByPackageName(packageName).length == 0) {
-                        appNotificationDataDao.addAppNotificationData(appData.appNotificationData);
-                    }
+            dbExecutor.execute(() -> {
+                if (appNotificationDataDao.getAppNotificationDataByPackageName(packageName).length == 0) {
+                    appNotificationDataDao.addAppNotificationData(data);
                 }
-            }.start();
-        }
+            });
+            return data;
+        });
 
-        if (appData.singleNotifications == null) {
-            appData.singleNotifications = new ArrayList<>();
-            singleNotificationsMap.put(packageName, appData.singleNotifications);
-        }
+        appData.singleNotifications = singleNotificationsMap.computeIfAbsent(packageName, k -> new ArrayList<>());
 
         return appData;
     }
 
     public void SetAppMode(String packageName, int mode) {
-
-        AppNotificationData appNotificationData = appNotificationDataMap.get(packageName);
-        if (appNotificationData.mode != mode) {
-            appNotificationData.mode = mode;
-
-            new Thread() {
-                @Override
-                public void run() {
-                    appNotificationDataDao.updateAppNotificationData(appNotificationData);
-                }
-            }.start();
+        AppNotificationData data = appNotificationDataMap.get(packageName);
+        if (data != null && data.mode != mode) {
+            data.mode = mode;
+            dbExecutor.execute(() -> appNotificationDataDao.updateAppNotificationData(data));
         }
     }
 
     public void SetBlackList(String packageName, String blackList) {
-        AppNotificationData appNotificationData = appNotificationDataMap.get(packageName);
-        if (appNotificationData.blackList == null || !appNotificationData.blackList.equals(blackList)) {
-            appNotificationData.blackList = blackList;
-
-            new Thread() {
-                @Override
-                public void run() {
-                    appNotificationDataDao.updateAppNotificationData(appNotificationData);
-                }
-            }.start();
+        AppNotificationData data = appNotificationDataMap.get(packageName);
+        if (data != null && (data.blackList == null || !data.blackList.equals(blackList))) {
+            data.blackList = blackList;
+            dbExecutor.execute(() -> appNotificationDataDao.updateAppNotificationData(data));
         }
     }
 
     public void SetWhiteList(String packageName, String whiteList) {
-        AppNotificationData appNotificationData = appNotificationDataMap.get(packageName);
-        if (appNotificationData.whiteList == null || !appNotificationData.whiteList.equals(whiteList)) {
-            appNotificationData.whiteList = whiteList;
-
-            new Thread() {
-                @Override
-                public void run() {
-                    appNotificationDataDao.updateAppNotificationData(appNotificationData);
-                }
-            }.start();
+        AppNotificationData data = appNotificationDataMap.get(packageName);
+        if (data != null && (data.whiteList == null || !data.whiteList.equals(whiteList))) {
+            data.whiteList = whiteList;
+            dbExecutor.execute(() -> appNotificationDataDao.updateAppNotificationData(data));
         }
     }
 
-    public void SaveNotification(String packageName, long time, String title, String content, boolean isBlocked) {
+    public void SaveNotification(String packageName, String notificationKey, long time,
+                                  String title, String content, boolean isBlocked) {
+        // Dedup: skip if notification with same key already in memory
+        if (notificationKey != null) {
+            List<SingleNotification> existing = singleNotificationsMap.get(packageName);
+            if (existing != null) {
+                for (SingleNotification sn : existing) {
+                    if (notificationKey.equals(sn.notificationKey)) {
+                        return;
+                    }
+                }
+            }
+        }
+
         SingleNotification singleNotification = new SingleNotification();
         singleNotification.packageName = packageName;
+        singleNotification.notificationKey = notificationKey;
         singleNotification.sendTime = time;
         singleNotification.title = title;
         singleNotification.content = content;
         singleNotification.isBlocked = isBlocked;
 
-        if (!singleNotificationsMap.containsKey(packageName)) {
-            singleNotificationsMap.put(packageName, new ArrayList<>());
-        }
+        singleNotificationsMap
+                .computeIfAbsent(packageName, k -> new ArrayList<>())
+                .add(singleNotification);
 
-        singleNotificationsMap.get(packageName).add(singleNotification);
-
-        new Thread() {
-            @Override
-            public void run() {
+        dbExecutor.execute(() -> {
+            // DB-level dedup: skip if already persisted
+            if (notificationKey == null
+                    || singleNotificationDao.getNotificationByKey(notificationKey).length == 0) {
                 singleNotificationDao.addNotifications(singleNotification);
             }
-        }.start();
+        });
     }
 
     public boolean shouldBlocked(String packageName, String title, String content) {
-        AppNotificationData appNotificationData = appNotificationDataMap.get(packageName);
-        if (appNotificationData == null) {
-            appNotificationData = new AppNotificationData();
-            appNotificationData.packageName = packageName;
-            appNotificationData.mode = AppNotificationMode.NONE;
-            appNotificationDataMap.put(packageName, appNotificationData);
+        AppNotificationData data = appNotificationDataMap.computeIfAbsent(packageName, k -> {
+            AppNotificationData newData = new AppNotificationData();
+            newData.packageName = packageName;
+            newData.mode = AppNotificationMode.NONE;
 
-            AppNotificationData finalAppNotificationData = appNotificationData;
-            new Thread(){
-                @Override
-                public synchronized void run() {
-                    if (appNotificationDataDao.getAppNotificationDataByPackageName(packageName).length == 0) {
-                        appNotificationDataDao.addAppNotificationData(finalAppNotificationData);
-                    }
+            dbExecutor.execute(() -> {
+                if (appNotificationDataDao.getAppNotificationDataByPackageName(packageName).length == 0) {
+                    appNotificationDataDao.addAppNotificationData(newData);
                 }
-            }.start();
+            });
+            return newData;
+        });
 
+        if (data.mode == AppNotificationMode.NONE) {
             return false;
         }
 
-        if (appNotificationData.mode == AppNotificationMode.NONE) {
+        if (data.mode == AppNotificationMode.USE_BLACK_LIST) {
+            if (data.blackList == null) return false;
+
+            for (String keyWord : data.blackList.split("\\.")) {
+                if (keyWord.trim().isEmpty()) continue;
+                if (title.contains(keyWord) || content.contains(keyWord)) return true;
+            }
             return false;
         }
 
-        if (appNotificationData.mode == AppNotificationMode.USE_BLACK_LIST) {
-            if (appNotificationData.blackList == null) {
-                return false;
+        if (data.mode == AppNotificationMode.USE_WHITE_LIST) {
+            if (data.whiteList == null) return true;
+
+            for (String keyWord : data.whiteList.split("\\.")) {
+                if (keyWord.trim().isEmpty()) continue;
+                if (title.contains(keyWord) || content.contains(keyWord)) return false;
             }
-
-            String[] blackList = appNotificationData.blackList.split("\\.");
-            for (String keyWord :
-                    blackList) {
-                if (keyWord.trim().isEmpty()) {
-                    continue;
-                }
-
-                if (title.contains(keyWord)) {
-                    return true;
-                }
-
-                if (content.contains(keyWord)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        if (appNotificationData.mode == AppNotificationMode.USE_WHITE_LIST) {
-            if (appNotificationData.whiteList == null) {
-                return true;
-            }
-
-            String[] whiteList = appNotificationData.whiteList.split("\\.");
-            for (String keyWord :
-                    whiteList) {
-                if (keyWord.trim().isEmpty()) {
-                    continue;
-                }
-
-                if (title.contains(keyWord)) {
-                    return false;
-                }
-
-                if (content.contains(keyWord)) {
-                    return false;
-                }
-            }
-
             return true;
         }
 
