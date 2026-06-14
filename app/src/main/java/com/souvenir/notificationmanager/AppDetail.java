@@ -143,10 +143,10 @@ public class AppDetail extends AppCompatActivity {
                 for (String part : parts) {
                         part = part.trim();
                         if (part.isEmpty()) continue;
-                        if (part.matches("[\\p{IsHan}]+")) {
-                                for (int i = 0; i < part.length(); i++) tokens.add(String.valueOf(part.charAt(i)));
+                        for (int i = 0; i < part.length(); i++) {
+                                char c = part.charAt(i);
+                                if (Character.isIdeographic(c)) tokens.add(String.valueOf(c));
                         }
-                        if (part.length() >= 1) tokens.add(part);
                 }
                 return new ArrayList<>(tokens);
         }
