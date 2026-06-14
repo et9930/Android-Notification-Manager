@@ -1,6 +1,9 @@
 package com.souvenir.notificationmanager;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.net.Uri;
+import android.os.PowerManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -87,12 +90,29 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         checkPermission();
+        checkBatteryOptimization();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         viewModel.loadData();
+    }
+
+    private void checkBatteryOptimization() {
+        PowerManager pm = getSystemService(PowerManager.class);
+        if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+            new AlertDialog.Builder(this)
+                    .setTitle("电池优化")
+                    .setMessage("为了确保通知拦截服务稳定运行，请关闭电池优化限制。")
+                    .setPositiveButton("去设置", (d, w) -> {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                        intent.setData(Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("暂不", null)
+                    .show();
+        }
     }
 
     private void checkPermission() {

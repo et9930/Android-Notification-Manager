@@ -5,4 +5,8 @@
     <string name="sample_device_admin_description">此应用用于维持后台存活</string>
     <string name="sample_device_admin">NotificationManager</string>
 
+    <string name="foreground_channel_name">后台保活</string>
+    <string name="foreground_channel_desc">通知拦截服务运行中</string>
+    <string name="foreground_notification_title">NotificationManager</string>
+    <string name="foreground_notification_text">正在运行通知拦截服务</string>
 </resources>
