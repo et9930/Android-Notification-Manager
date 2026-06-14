@@ -11,6 +11,8 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -37,6 +39,10 @@ public class AppDetail extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_app_detail);
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(
+                getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(true);
 
         icon = findViewById(R.id.icon);
         name = findViewById(R.id.localName);

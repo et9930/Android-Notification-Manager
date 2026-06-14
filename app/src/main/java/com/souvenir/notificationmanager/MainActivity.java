@@ -19,6 +19,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        setupEdgeToEdge();
 
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
 
@@ -151,6 +156,12 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(context, "对不起，您的手机暂不支持", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
+    }
+
+    private void setupEdgeToEdge() {
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(
+                getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(true);
     }
 
     public static void toggleNotificationListenerService(Context context) {
