@@ -173,10 +173,7 @@ public class AppDetail extends AppCompatActivity {
         private void appendKeywords(boolean[] checked, String[] items, boolean toBlacklist) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < checked.length; i++) {
-                        if (checked[i]) {
-                                if (sb.length() > 0) sb.append(".");
-                                sb.append(items[i]);
-                        }
+                        if (checked[i]) sb.append(items[i]);
                 }
                 if (sb.length() == 0) {
                         Toast.makeText(this, "\u8bf7\u5148\u9009\u62e9\u5173\u952e\u8bcd", Toast.LENGTH_SHORT).show();
