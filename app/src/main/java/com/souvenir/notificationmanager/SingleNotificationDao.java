@@ -26,4 +26,7 @@ public interface SingleNotificationDao {
 
     @Query("SELECT * FROM single_notification_table WHERE notification_key == :key")
     SingleNotification[] getNotificationByKey(String key);
+
+    @Query("SELECT * FROM single_notification_table WHERE notification_key == :key AND send_time / 1000 == :second")
+    SingleNotification[] getNotificationByKeyAndSecond(String key, long second);
 }

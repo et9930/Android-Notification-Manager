@@ -125,7 +125,8 @@ public class NotificationManagement {
             List<SingleNotification> existing = singleNotificationsMap.get(packageName);
             if (existing != null) {
                 for (SingleNotification sn : existing) {
-                    if (notificationKey.equals(sn.notificationKey)) {
+                    if (notificationKey.equals(sn.notificationKey)
+                            && time / 1000 == sn.sendTime / 1000) {
                         return;
                     }
                 }
@@ -147,7 +148,7 @@ public class NotificationManagement {
         dbExecutor.execute(() -> {
             // DB-level dedup: skip if already persisted
             if (notificationKey == null
-                    || singleNotificationDao.getNotificationByKey(notificationKey).length == 0) {
+                    || singleNotificationDao.getNotificationByKeyAndSecond(notificationKey, time / 1000).length == 0) {
                 singleNotificationDao.addNotifications(singleNotification);
             }
         });
