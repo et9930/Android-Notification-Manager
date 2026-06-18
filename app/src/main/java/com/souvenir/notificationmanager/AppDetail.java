@@ -160,8 +160,11 @@ public class AppDetail extends AppCompatActivity {
         }
 
         displayItems.clear();
-        for (List<SingleNotification> group : groups.values()) {
-            Collections.sort(group, (a, b) -> Long.compare(a.sendTime, b.sendTime));
+        List<List<SingleNotification>> sortedGroups = new ArrayList<>(groups.values());
+        sortedGroups.sort((a, b) -> Long.compare(
+                b.get(b.size() - 1).sendTime, a.get(a.size() - 1).sendTime));
+        for (List<SingleNotification> group : sortedGroups) {
+            Collections.sort(group, (a, b) -> Long.compare(b.sendTime, a.sendTime));
             SingleNotification latest = group.get(group.size() - 1);
             int count = group.size();
             displayItems.add(new DisplayItem(DisplayItem.TYPE_GROUP, latest, count, group, false));
