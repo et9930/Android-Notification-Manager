@@ -166,7 +166,7 @@ public class AppDetail extends AppCompatActivity {
                 b.get(b.size() - 1).sendTime, a.get(a.size() - 1).sendTime));
         for (List<SingleNotification> group : sortedGroups) {
             Collections.sort(group, (a, b) -> Long.compare(b.sendTime, a.sendTime));
-            SingleNotification latest = group.get(group.size() - 1);
+            SingleNotification latest = group.get(0);
             int count = group.size();
             boolean hasUnread = false;
             for (SingleNotification sn : group) {
