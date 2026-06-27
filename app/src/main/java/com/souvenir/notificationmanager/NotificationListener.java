@@ -88,6 +88,7 @@ public class NotificationListener extends NotificationListenerService {
     }
 
     private void startForegroundService() {
+        try {
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
@@ -101,5 +102,8 @@ public class NotificationListener extends NotificationListenerService {
                 .build();
 
         startForeground(FOREGROUND_NOTIFICATION_ID, notification);
+        } catch (Exception e) {
+            // Ignore if notification permission not granted yet
+        }
     }
 }
