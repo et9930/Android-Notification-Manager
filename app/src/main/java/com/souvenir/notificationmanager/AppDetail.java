@@ -126,6 +126,7 @@ public class AppDetail extends AppCompatActivity {
             state.setText("\u4e0a\u6b21\u901a\u77e5\u65f6\u95f4:" + times + "\n\u62e6\u622a\u6b21\u6570:" + blockNumber);
 
             buildDisplayItems(appData.singleNotifications);
+            nm.markAllRead(packageName);
 
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
@@ -167,7 +168,11 @@ public class AppDetail extends AppCompatActivity {
             Collections.sort(group, (a, b) -> Long.compare(b.sendTime, a.sendTime));
             SingleNotification latest = group.get(group.size() - 1);
             int count = group.size();
-            displayItems.add(new DisplayItem(DisplayItem.TYPE_GROUP, latest, count, group, false));
+            boolean hasUnread = false;
+            for (SingleNotification sn : group) {
+                if (sn.isBlocked && !sn.isRead) { hasUnread = true; break; }
+            }
+            displayItems.add(new DisplayItem(DisplayItem.TYPE_GROUP, latest, count, group, false, hasUnread));
         }
         adapter.notifyDataSetChanged();
     }
@@ -186,7 +191,7 @@ public class AppDetail extends AppCompatActivity {
             int insertPos = position + 1;
             for (SingleNotification sn : group.allNotifications) {
                 displayItems.add(insertPos++,
-                        new DisplayItem(DisplayItem.TYPE_DETAIL, sn, 0, null, false));
+                        new DisplayItem(DisplayItem.TYPE_DETAIL, sn, 0, null, false, sn.isBlocked && !sn.isRead));
             }
             group.expanded = true;
         }

@@ -25,4 +25,7 @@ public class SingleNotification {
     @ColumnInfo(name = "notification_key")
     public String notificationKey;
 
+    @ColumnInfo(name = "is_read", defaultValue = "1")
+    public boolean isRead;
+
 }

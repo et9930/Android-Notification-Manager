@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.graphics.Color;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
@@ -94,6 +95,11 @@ public class HistoryNotificationAdapter extends BaseAdapter {
         holder.titleText.setText(sn.title);
         holder.contentText.setText(sn.content);
         holder.stateText.setText(sn.isBlocked ? "\u5df2\u62e6\u622a" : "\u672a\u62e6\u622a");
+        if (item.isUnread) {
+            convertView.setBackgroundColor(0x33FF0000);
+        } else {
+            convertView.setBackgroundColor(Color.TRANSPARENT);
+        }
         if (item.count > 1) {
             holder.countText.setVisibility(View.VISIBLE);
             holder.countText.setText("(x" + item.count + ")");
@@ -117,6 +123,11 @@ public class HistoryNotificationAdapter extends BaseAdapter {
 
         holder.detailTime.setText(FORMAT.format(item.notification.sendTime));
         holder.detailState.setText(item.notification.isBlocked ? "\u5df2\u62e6\u622a" : "\u672a\u62e6\u622a");
+        if (item.isUnread) {
+            convertView.setBackgroundColor(0x33FF0000);
+        } else {
+            convertView.setBackgroundColor(Color.TRANSPARENT);
+        }
         return convertView;
     }
 }

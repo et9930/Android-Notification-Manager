@@ -12,12 +12,15 @@ public class DisplayItem {
     public List<SingleNotification> allNotifications;  // all in this group
     public boolean expanded;
 
+    public boolean isUnread;
+
     public DisplayItem(int type, SingleNotification notification, int count,
-                       List<SingleNotification> all, boolean expanded) {
+                       List<SingleNotification> all, boolean expanded, boolean isUnread) {
         this.type = type;
         this.notification = notification;
         this.count = count;
         this.allNotifications = all;
         this.expanded = expanded;
+        this.isUnread = isUnread;
     }
 }

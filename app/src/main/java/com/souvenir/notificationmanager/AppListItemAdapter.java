@@ -92,9 +92,12 @@ public class AppListItemAdapter extends BaseAdapter {
                     ? new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(lastTime))
                     : "N/A";
 
+            int unreadBlocked = NotificationManagement.GetInstance(context)
+                    .countUnreadBlocked(item.packageName);
+            String unreadInfo = unreadBlocked > 0 ? "\n未读已拦截:" + unreadBlocked : "";
             holder.packageState.setText("当前模式:" + stateText
                     + "\n上次通知时间:" + times
-                    + "\n拦截次数:" + blockNumber);
+                    + "\n拦截次数:" + blockNumber + unreadInfo);
 
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();

@@ -140,6 +140,7 @@ public class NotificationManagement {
         singleNotification.title = title;
         singleNotification.content = content;
         singleNotification.isBlocked = isBlocked;
+        singleNotification.isRead = !isBlocked;
 
         singleNotificationsMap
                 .computeIfAbsent(packageName, k -> new ArrayList<>())
@@ -152,6 +153,18 @@ public class NotificationManagement {
                 singleNotificationDao.addNotifications(singleNotification);
             }
         });
+    }
+
+    public int countUnreadBlocked(String packageName) {
+        return singleNotificationDao.countUnreadBlocked(packageName);
+    }
+
+    public void markAllRead(String packageName) {
+        List<SingleNotification> list = singleNotificationsMap.get(packageName);
+        if (list != null) {
+            for (SingleNotification sn : list) sn.isRead = true;
+        }
+        dbExecutor.execute(() -> singleNotificationDao.markAllRead(packageName));
     }
 
     public boolean shouldBlocked(String packageName, String title, String content) {

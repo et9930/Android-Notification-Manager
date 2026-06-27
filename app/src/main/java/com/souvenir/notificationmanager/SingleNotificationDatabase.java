@@ -10,7 +10,7 @@ import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
-@Database(entities = { SingleNotification.class }, version = 2, exportSchema = false)
+@Database(entities = { SingleNotification.class }, version = 3, exportSchema = false)
 
 public abstract class SingleNotificationDatabase extends RoomDatabase {
     private static final String DB_NAME = "SingleNotificationDatabase.db";
@@ -20,6 +20,13 @@ public abstract class SingleNotificationDatabase extends RoomDatabase {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL("ALTER TABLE single_notification_table ADD COLUMN notification_key TEXT");
+        }
+    };
+
+    static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE single_notification_table ADD COLUMN is_read INTEGER NOT NULL DEFAULT 1");
         }
     };
 
@@ -35,7 +42,7 @@ public abstract class SingleNotificationDatabase extends RoomDatabase {
                 context,
                 SingleNotificationDatabase.class,
                 DB_NAME)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build();
     }
 
