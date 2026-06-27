@@ -43,6 +43,7 @@ public abstract class SingleNotificationDatabase extends RoomDatabase {
                 SingleNotificationDatabase.class,
                 DB_NAME)
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .allowMainThreadQueries()
                 .build();
     }
 
